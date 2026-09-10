@@ -215,18 +215,6 @@ header[data-testid="stHeader"] {{ background:transparent; }}
   background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.25);
   padding:6px 14px; border-radius:999px; font-size:.73rem; font-weight:600;
 }}
-/* tombol refresh kecil di samping tanggal sinkron */
-.hero .hero-side-top {{
-  display:flex; align-items:center; gap:6px;
-}}
-.hero a.hero-refresh {{
-  flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center;
-  width:27px; height:27px; border-radius:999px; text-decoration:none;
-  background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.25);
-  color:#fff; font-size:.9rem; line-height:1;
-}}
-.hero a.hero-refresh:hover {{ background:rgba(255,255,255,.30); }}
-.hero a.hero-refresh:active {{ transform:scale(.92); }}
 
 /* ---------- hero di layar sempit (mobile) ----------
    Deretan logo di kiri-atas, teks di bawahnya (rata kiri),
@@ -856,9 +844,12 @@ def load_auto() -> tuple[pd.DataFrame, list[str]]:
         raise
 
 
-# Tombol ⟳ di banner -> ?sync=1: paksa unduh ulang spreadsheet sekarang.
-_force_sync = st.query_params.get("sync") == "1"
-if _force_sync:
+# Sinkronisasi data: unduhan segar terjadi pada setiap MUAT-ULANG HALAMAN
+# (F5 atau klik logo bara-mendoan — keduanya membuka sesi browser baru).
+# Rerun widget biasa tetap memakai cache agar tampil responsif.
+_first_page_load = "page_loaded" not in st.session_state
+st.session_state["page_loaded"] = True
+if _first_page_load:
     _live_bytes.clear()
     load_auto.clear()
 
@@ -867,12 +858,6 @@ try:
     df_data, _errs = load_auto()
 except Exception:                                       # noqa: BLE001
     df_data = None
-
-if _force_sync:
-    try:    # hapus param agar rerun normal berikutnya tidak men-sync lagi
-        del st.query_params["sync"]
-    except Exception:                                   # noqa: BLE001
-        pass
 
 if df_data is None or df_data.empty:
     st.error("⏳ Belum ada data yang dapat dimuat. Pastikan koneksi internet "
@@ -958,8 +943,8 @@ st.markdown(
     f"""
     <div class="hero">
       <div class="hero-logos">
-        <a class="hero-logo-plain" href="./" title="Beranda dashboard"
-           aria-label="Beranda dashboard">{mendoan_logo(74)}</a>
+        <a class="hero-logo-plain" href="?" title="Muat ulang halaman (ambil data terbaru)"
+           aria-label="Muat ulang halaman">{mendoan_logo(74)}</a>
         <a class="hero-logo-plain" href="https://banjarnegarakab.bps.go.id/id"
            target="_blank" rel="noopener" title="BPS Kabupaten Banjarnegara"
            aria-label="BPS Kabupaten Banjarnegara">{bps_logo(74)}</a>
@@ -971,11 +956,7 @@ st.markdown(
           <p class="fokus">Periode {rentang[0]}–{rentang[-1]}</p>
         </div>
         <div class="hero-side">
-          <div class="hero-side-top">
-            <div class="hero-stamp">{data_updated_at():%d %b %Y %H:%M}</div>
-            <a class="hero-refresh" href="?sync=1" title="Sinkronkan data dengan spreadsheet"
-               aria-label="Sinkronkan data">⟳</a>
-          </div>
+          <div class="hero-stamp">{data_updated_at():%d %b %Y %H:%M}</div>
           <div class="badge-stack">
             <span>Indikator difokuskan : {len(indikator_pick)}</span>
             <span>Indikator terpantau : {len(CANONICAL)}</span>

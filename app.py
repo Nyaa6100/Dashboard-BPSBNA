@@ -743,7 +743,9 @@ def chart_overlay(df: pd.DataFrame, ind_a: str, ind_b: str,
             yaxis={"ticksuffix": "%" if pct_a else None,
                    "separatethousands": not pct_a},
         )
-    return _base_layout(fig)
+    # kanvas sedikit lebih tinggi dari default (330 px) agar dua deret
+    # yang ditumpangkan tetap terbaca lega
+    return _base_layout(fig, height=380)
 
 
 # --- Gauge IPM dinonaktifkan (dikomentari) ---
